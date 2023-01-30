@@ -1,0 +1,446 @@
+---
+title: "ERP Panorama"
+author:
+  - name: Dr. Raúl Trujillo
+  - name: Jaime Bonilla
+params:
+  diameter: 100
+  temperature: 20
+  elevation: 240
+  kvs: 154.76
+format: 
+  html:
+    theme: flatly
+    code-fold: true
+    code-tools: true
+    toc: true
+    number-sections: true
+    html-math-method: katex
+    self-contained: true
+engine: knitr
+---
+
+```{r}
+#| label: load_libraries
+#| include: true
+#| warning: false
+#| echo: false
+#| eval: true 
+
+library(tidyverse)
+library(here)
+library(lubridate)
+library(latex2exp)
+library(hyd4gpv)
+library(scales)
+library(scales)
+# library(forecast)
+# library(zoo)
+
+my_comma <- scales::label_comma(accuracy = 1, big.mark = ".", decimal.mark = ",")
+
+```
+
+```{r}
+#| label: cv_Valtek_control_valve
+#| include: true
+#| warning: false
+#| echo: false
+#| eval: true 
+
+#
+# Manufacturer: Flowserve-Valtek
+# Valve Type: Mark One, Unbalanced
+# Pressure Class: 150#-600#
+# Trim Characteristics: Equal Percentage
+# Flow Direction: Over/Upstream
+# www: https://www.scribd.com/doc/130791997/Flowserve-Cv-tables-pdf
+#
+
+
+globe_valve <- tribble(
+  ~dn, ~units,    ~brand,  ~trim, ~stoke, ~opening,   ~cv,
+    4, "inch",  "Valtek",   3.50,    2.5,        5,   6.5,
+    4, "inch",  "Valtek",   3.50,    2.5,       10,  13.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       20,  20.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       30,  26.0,  
+    4, "inch",  "Valtek",   3.50,    2.5,       40,  35.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       50,  57.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       60,  96.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       70, 130.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       80, 154.0,
+    4, "inch",  "Valtek",   3.50,    2.5,       90, 169.0,
+    4, "inch",  "Valtek",   3.50,    2.5,      100, 179.0,
+    4, "inch",  "Valtek",   2.62,    2.0,        5,   3.7,
+    4, "inch",  "Valtek",   2.62,    2.0,       10,   7.4,
+    4, "inch",  "Valtek",   2.62,    2.0,       20,  11.0,
+    4, "inch",  "Valtek",   2.62,    2.0,       30,  16.0,  
+    4, "inch",  "Valtek",   2.62,    2.0,       40,  24.0,
+    4, "inch",  "Valtek",   2.62,    2.0,       50,  39.0,
+    4, "inch",  "Valtek",   2.62,    2.0,       60,  63.0,
+    4, "inch",  "Valtek",   2.62,    2.0,       70,  89.0,
+    4, "inch",  "Valtek",   2.62,    2.0,       80, 111.0,
+    4, "inch",  "Valtek",   2.62,    2.0,       90, 124.0,
+    4, "inch",  "Valtek",   2.62,    2.0,      100, 133.0,
+    4, "inch",  "Valtek",   2.25,    2.0,        5,   2.3,
+    4, "inch",  "Valtek",   2.25,    2.0,       10,   4.6,
+    4, "inch",  "Valtek",   2.25,    2.0,       20,   7.4,
+    4, "inch",  "Valtek",   2.25,    2.0,       30,  12.0,  
+    4, "inch",  "Valtek",   2.25,    2.0,       40,  15.0,
+    4, "inch",  "Valtek",   2.25,    2.0,       50,  24.0,
+    4, "inch",  "Valtek",   2.25,    2.0,       60,  40.0,
+    4, "inch",  "Valtek",   2.25,    2.0,       70,  63.0,
+    4, "inch",  "Valtek",   2.25,    2.0,       80,  83.0,
+    4, "inch",  "Valtek",   2.25,    2.0,       90,  96.0,
+    4, "inch",  "Valtek",   2.25,    2.0,      100, 104.0,
+    4, "inch",  "Valtek",   1.62,    1.5,        5,   1.3,
+    4, "inch",  "Valtek",   1.62,    1.5,       10,   2.5,
+    4, "inch",  "Valtek",   1.62,    1.5,       20,   3.6,
+    4, "inch",  "Valtek",   1.62,    1.5,       30,   5.7,  
+    4, "inch",  "Valtek",   1.62,    1.5,       40,   8.4,
+    4, "inch",  "Valtek",   1.62,    1.5,       50,  11.0,
+    4, "inch",  "Valtek",   1.62,    1.5,       60,  16.0,
+    4, "inch",  "Valtek",   1.62,    1.5,       70,  25.0,
+    4, "inch",  "Valtek",   1.62,    1.5,       80,  37.0,
+    4, "inch",  "Valtek",   1.62,    1.5,       90,  48.0,
+    4, "inch",  "Valtek",   1.62,    1.5,      100,  55.0
+)
+
+```
+
+# Lectura de los datos
+
+```{r}
+
+#| label: read_data
+#| include: true
+#| warning: false
+#| echo: false
+#| eval: true 
+
+erp_panorama_2020 <- read_csv(
+  here::here("data", "erp_panorama_2020.csv"),
+  show_col_types = FALSE
+  ) |> 
+  mutate( 
+    timestamp = mdy_hm(timestamp),
+    date = date(timestamp),
+    hour = hour(timestamp),
+    cat = ifelse( hour < 6 | 22 < hour, "Noche","Día" ),
+    wday = wday(date, label = TRUE, abbr = TRUE)
+  ) 
+
+n_rows <- count(erp_panorama_2020)
+
+
+erp_panorama_2020 <- erp_panorama_2020 |> 
+  filter(p1 > 0 & p2 >0 & (p1-p2>0)) |> 
+  filter(between(flow, 1.5, 194)) |> 
+  mutate(
+    kv       = round(kv(p1/10, p2/10, flow*3.6, params$temperature),3),
+    kv_kvs   = round(kv/params$kvs*100,2),
+    sigma    = round(sigma_1(p1/10, p2/10, params$elevation, params$temperature),3),
+    zeta     = zeta_vaule(params$diameter, kv),
+    flow     = round(flow,0),
+    delta_sp = p2 - setpoint
+  ) |> 
+  na.omit() |> 
+   select(timestamp, date, wday, hour, cat, p1, p2, flow, setpoint, delta_sp, kv, kv_kvs, sigma, zeta)
+
+
+# https://www.youtube.com/watch?v=UBDevJvH1m4
+# https://tbradley1013.github.io/2018/10/01/calculating-quantiles-for-groups-with-dplyr-summarize-and-purrr-partial/
+
+daily.df1 <- erp_panorama_2020 |> 
+  group_by(date) |> 
+  summarise(
+    q25 = quantile(flow, probs = 0.25, na.rm = TRUE),
+    median = median(flow, na.rm = TRUE),
+    mean = mean(flow, na.rm = TRUE),
+    q75 = quantile(flow, probs = 0.75, na.rm = TRUE),
+    sd = sd(flow, na.rm = TRUE),
+    n = n(),
+    missing = round(((24*60/5) - n)/(24*60/5)*100,2)
+  ) |> 
+  filter(missing <= 75)
+
+
+```
+
+::: callout-note
+## Lecturas de datos
+
+Datos:
+
+-   Se removieron las presiones negativas
+-   Se removieron las diferencia de presiones negativas
+-   Se removieron los Flujos menores a $1.5 \; l/s$ y superiores a $194 \; l/s$
+-   El total número de valores leídos fueron `r my_comma(as.numeric(n_rows[1]))`
+-   El total número de valores *válidos* fueron `r my_comma(nrow(erp_panorama_2020))`
+-   El porcentaje de valores removidos fue del `r round((n_rows-nrow(erp_panorama_2020))/n_rows*100,2)` $\%$.
+-   Se especificó un coeficiente de flujo[^1] máximo de $K_{vs}=$ `r params$kvs` $m^3/h$[^2]
+:::
+
+[^1]: Coeficiente de Flujo: $K_v$ es el coeficiente de flujo en unidades métricas. Se define como el caudal que pasa a través de la válvula en metros cúbicos por hora $[m3/h]$ de agua a una temperatura de $16°C$ celsius con una caída de presión de $1 \cdot bar$; $C_v$ es el coeficiente de flujo en unidades imperiales. Se define como el caudal pasa a través de la válvula en galones estadounidenses por minuto $[gpm]$ de agua a una temperatura de $60°F$ Fahrenheit con una caída de presión de $1 \cdot psi$; $K_v = 0.8646 \cdot C_v$ or $C_v= 1.1566 \cdot K_v$
+
+[^2]: Dependiendo del tipo de válvula de globo que se haya instalado se tendrán diferentes curvas y valores máximos del coeficiente de flujo.
+
+# Análisis inicial de los datos (visualización exploratoria)
+
+## Histograma de Flujos
+
+```{r}
+#| label: histogram_flow
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Gráfico de caudales en el día y en la noche"
+#| warning: false
+
+# https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
+# https://r-graph-gallery.com/82-boxplot-on-top-of-histogram.html
+
+mu <- erp_panorama_2020 |>  
+  group_by(cat) |> 
+  summarise(grp.median = median(flow))
+
+erp_panorama_2020 |> 
+  ggplot(aes(x = flow, fill = cat, color = cat)) +
+    geom_density(
+      alpha = 0.4,
+      position = "identity"
+    ) +
+  geom_vline(
+    data=mu, 
+    aes(xintercept = grp.median, color = cat),
+    linetype="dashed"
+  ) + 
+  scale_color_brewer(palette="Dark2")+
+  scale_fill_brewer(palette="Dark2") +
+  ggtitle("Histograma de los caudales en el día y en la noche") +
+  xlab("Caudal (L/s)") + 
+  ylab("Densidad") +
+  scale_x_continuous(
+    limits = c(0, 55),
+    breaks = seq(0, 55, by = 5)
+  )
+
+```
+
+::: callout-note
+## Caudales medios en el día y la noche
+
+-   Se especificó como consumo diario los consumos entre las 6:00 y las 22:00 horas
+-   La mediana[^3] del consumo diario fue de `r mu$grp.median[1]` $l/s$
+-   La mediana del consumo nocturno fue de `r mu$grp.median[2]` $l/s$
+:::
+
+[^3]: La *MEDIANA* mide la tendencia central, que es la ubicación del centro de un grupo de números en una distribución estadística.
+
+## Diagrama de de caja (Box-Plots) de los flujos horarios
+
+El diagrama de de caja es una forma rápida y fácil de visualizar datos complejos donde tiene varias muestras.
+
+![](image/typical-box-whisker-plot.png)
+
+```{r}
+#| label: boxplot_hour_flow
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Boxplot de flujos por horas"
+#| warning: false
+
+erp_panorama_2020 |> 
+    ggplot(aes(x= as.factor(hour), y=flow, color=cat)) + 
+    stat_boxplot(geom = "errorbar") + 
+    geom_boxplot(width = 0.8, outlier.shape = NA) + 
+    scale_color_brewer(palette="Dark2") +
+  ggtitle("Boxplot de caudales discriminados según la hora del día") +
+  xlab("Hora") + 
+  ylab("Caudal (L/s)") +
+  scale_y_continuous(
+    limits = c(0, 50),
+    breaks = seq(0, 50, by = 5)
+  )
+
+```
+
+## Box-plot de flujos por días de la semana
+
+```{r}
+#| label: boxplot_wday_flow
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Boxplot de flujos por días de la semana"
+#| warning: false
+
+erp_panorama_2020 |> 
+    ggplot(aes(x= wday, y=flow, color=cat)) + 
+    stat_boxplot(geom = "errorbar") + 
+    geom_boxplot(width = 0.8, outlier.shape = NA) + 
+    scale_color_brewer(palette="Dark2") +
+  ggtitle("Boxplot de caudales discriminados por días de la semana") +
+  xlab("Día de la semana") + 
+  ylab("Caudal (L/s)") +
+  scale_y_continuous(
+    limits = c(0, 50),
+    breaks = seq(0, 50, by = 5)
+  )
+
+```
+
+## Histograma de la Consigna de presión (Set-point) versus presión aguas abajo
+
+```{r}
+#| label: histogram_delta_setpoint
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Histograma de la Consigna de presión verzus presión aguas abajo"
+#| warning: false
+
+erp_panorama_2020 |> 
+  ggplot(aes(x = delta_sp)) +
+    geom_histogram(
+      aes(y=..density..), 
+      position="identity", 
+      alpha=0.6,
+      binwidth = 0.1
+    ) +
+    labs(title = TeX(r'(Diferencia con la consigna $\Delta P$)')) +
+    xlab(TeX(r'($\Delta P = (P_2 - SetPoint)$ $(m)$)')) +
+    ylab("Densidad") +
+    scale_x_continuous(
+      limits = c(-20, 20),
+      breaks = seq(-20, 20, by = 5)
+    ) +
+    geom_vline(aes(xintercept = median(delta_sp)), color = "red", size = 1, linetype = "dashed") +
+    geom_vline(aes(xintercept = median(delta_sp) + sd(delta_sp)), color = "#000000", size = 1, linetype = "dashed") +
+    geom_vline(aes(xintercept = median(delta_sp) - sd(delta_sp)), color = "#000000", size = 1, linetype = "dashed")
+  
+```
+
+## Coeficiente de flujo $K_v$[^1]
+
+
+```{r}
+#| label: histogram_flow_coefficient
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Histograma del Coeficiente de flujo Kv"
+#| warning: false
+#| 
+# https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
+# https://cran.r-project.org/web/packages/latex2exp/vignettes/using-latex2exp.html
+
+erp_panorama_2020 |> 
+  ggplot(aes(x = kv)) +
+    geom_histogram(
+      aes(y=..density..), 
+      position="identity", 
+      alpha=0.6,
+      binwidth = 0.5
+    ) +
+    labs(title = TeX(r'(Coeficiente de flujo $K_v$)')) +
+    xlab(TeX(r'($K_v$ $(m^3/hour)$)')) +
+    ylab("Densidad") +
+    scale_x_continuous(
+      limits = c(0, 160),
+      breaks = seq(0, 160, by = 10)
+    ) +
+    geom_vline(aes(xintercept = median(kv)), color = "red", size = 1, linetype = "dashed" ) 
+
+```
+
+## Histograma del Coeficiente relativo de flujo $K_v/k_{vs}$
+
+```{r}
+#| label: histogram_relative_flow_coefficient
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Histograma del Coeficiente relativo de flujo Kv/kvs"
+#| warning: false
+#| 
+# https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
+# https://cran.r-project.org/web/packages/latex2exp/vignettes/using-latex2exp.html
+
+mu <- erp_panorama_2020 |>  
+  group_by(cat) |> 
+  summarise(grp.median = median(kv_kvs))
+
+erp_panorama_2020 |> 
+  ggplot(aes(x = kv_kvs, fill = cat, color = cat)) +
+    geom_density(
+      alpha = 0.4,
+      position = "identity"
+    ) +
+  geom_vline(
+    data=mu, 
+    aes(xintercept = grp.median, color = cat),
+    linetype="dashed"
+  ) + 
+  scale_color_brewer(palette="Dark2")+
+  scale_fill_brewer(palette="Dark2") +
+  ggtitle(TeX(r'(Histograma del Coeficiente relativo de flujo $K_v/K_{vs} (\%)$)')) +
+  xlab(TeX(r'($K_v/K_{vs} (\%)$)')) + 
+  ylab("Densidad") +
+  scale_x_continuous(
+    limits = c(0, 100),
+    breaks = seq(0, 100, by = 5)
+  )
+
+```
+
+## Historram del Zeta de la válvula
+
+```{r}
+#| label: histogram_zeta_value
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Historram del Zeta de la válvula"
+#| warning: false
+#| 
+
+erp_panorama_2020 |>
+  ggplot(aes(x = zeta)) +
+    geom_histogram(
+      aes(y=..density..),
+      position="identity",
+      alpha=0.6,
+      binwidth = 10
+    ) +
+    labs(title = TeX(r'(Historram del Zeta $(\zeta)$ de la válvula)')) +
+    xlab(TeX(r'($\zeta$)')) +
+    ylab("Densidad") +
+    scale_x_continuous(
+      limits = c(0, 2000),
+      breaks = seq(0, 2000, by = 500)
+    ) +
+    geom_vline(aes(xintercept = median(zeta)), color = "red", size = 1, linetype = "dashed" ) 
+```
+
+## Relación caudal versus Presión Aguas Arriba (P1) de la válvula
+
+```{r}
+#| label: flow_vs_p1
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Boxplot de la relación caudal Presión Aguas Arriba (P1) de la válvula"
+#| warning: false
+#| 
+erp_panorama_2020 |> 
+  ggplot(aes(x= as.factor(flow), y=p1)) + 
+  stat_boxplot(geom = "errorbar") + 
+  geom_boxplot(width = 0.8, outlier.shape = NA) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_color_brewer(palette="Dark2") +
+  ggtitle("Boxplot de la relación caudal versus Presión Aguas Arriba (P1)") +
+  xlab("Caudal (L/s)") + 
+  ylab("Presión Aguas Arriba (m)")
+
+```
+
+## Consumo medio diario durante el 2020
+
+```{r}
+
+
+```
