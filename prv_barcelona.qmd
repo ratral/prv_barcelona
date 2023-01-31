@@ -1,5 +1,5 @@
 ---
-title: "VRP ALBORADA & BARCELONA 2019 y 2022"
+title: "VRP BARCELONA 2019 y 2022"
 author: 
   - name: Dr. Raúl Trujillo
 params:
@@ -210,6 +210,20 @@ ggplot(aes(x=pc)) +
 
 
 
+### Presiones diferenciales entre la presión aguas arriba y la presion en el punto crítico
+
+```{r}
+#| label: histogram_presion_diferencial_pc
+#| echo: fenced
+#| output-location: column
+#| fig-cap: "Presiones diferenciales dPc = Pu-Pc"
+#| warning: false
+
+
+
+```
+
+
 ## Posición de operación de la válvula
 ### Posición de operación de la válvula anos 2019 y 2022
 
@@ -245,3 +259,6 @@ data_prv %>%
   - La posición media de la válvula en 2022 fue del `r round(median_vp$median_vp[2], 0)`%
   
 :::
+
+
+

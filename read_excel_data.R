@@ -99,12 +99,6 @@ data_prv <- mutate_at(data_prv, vars(measurement), as.factor)
 data_prv <- data_prv %>% 
   pivot_wider(names_from = measurement, values_from = value)
 
-# Insert column Year and filter for 2019 and 2022
-data_prv <- data_prv %>% 
-  mutate(year = year(date_time)) %>% 
-  mutate_at(vars(year), as.factor) %>% 
-  filter(year == 2019 | year == 2022)
-
 #-------------------------------------------------------------------------------
 # Create calender for 2019 and 2020
 
@@ -125,6 +119,16 @@ data_prv <- dplyr::left_join(measurements_time,
                                          by = 'date_time')
 
 rm(time_series_2019, time_series_2022, measurements_time)
+
+#-------------------------------------------------------------------------------
+# Calculation of the pressure difference between Pu and Pc
+data_prv <- data_prv %>%
+  mutate(dpc = pd-pc)
+
+# Insert column Year and filter for 2019 and 2022
+data_prv <- data_prv %>% 
+  mutate(year = year(date_time)) %>% 
+  mutate_at(vars(year), as.factor)
 
 
 # Holidays and Observances in Ecuador 
