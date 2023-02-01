@@ -82,14 +82,14 @@ Datos:
 # https://r-graph-gallery.com/82-boxplot-on-top-of-histogram.html
 
 median_flow <- data_prv %>% 
-  select(year, flow) %>% 
-  group_by(year) %>% 
+  select(yr, flow) %>% 
+  group_by(yr) %>% 
   summarise(median_flow =median(flow, na.rm=TRUE))
 
-  ggplot(data_prv, aes(x=flow, color=year, fill = year)) + 
+  ggplot(data_prv, aes(x=flow, color=yr, fill = yr)) + 
     geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
     geom_density(alpha=0.6)+
-    geom_vline(data=median_flow, aes(xintercept=median_flow, color=year),
+    geom_vline(data=median_flow, aes(xintercept=median_flow, color=yr),
                linetype="dashed")+
     theme(legend.position="top") +
     ggtitle("Histograma de caudales") +
@@ -118,15 +118,15 @@ median_flow <- data_prv %>%
 #| warning: false
 
 median_pu <- data_prv %>% 
-  select(year, pu) %>% 
-  group_by(year) %>% 
+  select(yr, pu) %>% 
+  group_by(yr) %>% 
   summarise(median_pu =median(pu, na.rm=TRUE))
 
 data_prv %>% 
-ggplot(aes(x=pu, color=year, fill = year)) + 
+ggplot(aes(x=pu, color=yr, fill = yr)) + 
     geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
     geom_density(alpha=0.6) +
-    geom_vline(data=median_pu, aes(xintercept=median_pu, color=year),
+    geom_vline(data=median_pu, aes(xintercept=median_pu, color=yr),
              linetype="dashed") +
     theme(legend.position="top") +
     ggtitle("Histograma de presiones aguas arriba de la válvula") +
@@ -154,15 +154,15 @@ ggplot(aes(x=pu, color=year, fill = year)) +
 #| warning: false
 
 median_pd <- data_prv %>% 
-  select(year, pd) %>% 
-  group_by(year) %>% 
+  select(yr, pd) %>% 
+  group_by(yr) %>% 
   summarise(median_pd =median(pd, na.rm=TRUE))
 
 data_prv %>% 
-ggplot(aes(x=pd, color=year, fill = year)) + 
+ggplot(aes(x=pd, color=yr, fill = yr)) + 
     geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
     geom_density(alpha=0.6) +
-    geom_vline(data=median_pd, aes(xintercept=median_pd, color=year),
+    geom_vline(data=median_pd, aes(xintercept=median_pd, color=yr),
              linetype="dashed") +
     theme(legend.position="top") +
     ggtitle("Histograma de presiones aguas abajo de la válvula") +
@@ -191,8 +191,8 @@ ggplot(aes(x=pd, color=year, fill = year)) +
 #| warning: false
 
 median_pc <- data_prv %>% 
-  select(year, pc) %>% 
-  filter(year == 2022) %>% 
+  select(yr, pc) %>% 
+  filter(yr == 2022) %>% 
   summarise(median_pc =median(pc, na.rm=TRUE))
 
 data_prv %>% 
@@ -235,15 +235,15 @@ ggplot(aes(x=pc)) +
 #| warning: false
 
 median_vp <- data_prv %>% 
-  select(year, vp) %>% 
-  group_by(year) %>% 
+  select(yr, vp) %>% 
+  group_by(yr) %>% 
   summarise(median_vp = median(vp, na.rm=TRUE))
 
 data_prv %>% 
-  ggplot(aes(x=vp, color=year, fill = year)) + 
+  ggplot(aes(x=vp, color=yr, fill = yr)) + 
      geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
      geom_density(alpha=0.6) +
-     geom_vline(data=median_vp, aes(xintercept=median_vp, color=year),
+     geom_vline(data=median_vp, aes(xintercept=median_vp, color=yr),
                 linetype="dashed") +
       theme(legend.position="top") +
       ggtitle("Histograma de presiones aguas arriba de la válvula") +

@@ -2,6 +2,7 @@ library(tidyverse)
 library(here)
 library(lubridate)
 library(readxl)
+library(bizdays)
 
 file_data_2019 <- here::here('data', 'base_data_2019.xlsx') 
 file_data_2022 <- here::here('data', 'base_data_2022.xlsx')
@@ -113,26 +114,50 @@ time_series_2022 <- seq(from = as.POSIXct("2022-01-01 00:00:00", tz = "UTC"),
 measurements_time <- as_tibble(c(time_series_2019, time_series_2022))
 measurements_time <- rename(measurements_time, date_time = value)
 
+# Holidays Calendar Ecuador 2019 and 2022
+
+holidays <- read_csv(here::here('data','holidays.csv'),
+                     show_col_types = FALSE) %>% 
+  filter(type == 'National holiday') %>%
+  mutate(date = ydm(date))
+
+holidays <- as.Date(holidays$date)
+
+calender <- create.calendar("ANBIMA",
+                            holidays = holidays,
+                            weekdays = c("saturday", "sunday")
+)
+
+# Create columns for Year, Month, Weekday, Week year, and hour
+
+measurements_time <- measurements_time %>%
+  mutate(yr = year(date_time),
+         mt = month(date_time, label = TRUE, abbr = TRUE),
+         dy = wday(date_time, label = TRUE, abbr = TRUE),
+         bus_day = is.bizday(date(date_time), calender),
+         wk = week(date_time),
+         hr = hour(date_time))
+
+measurements_time <- measurements_time %>%
+   mutate_at(vars(yr), as.factor)
+
+
+# Join measurements_time with data_prv
 
 data_prv <- dplyr::left_join(measurements_time, 
-                                         data_prv,
-                                         by = 'date_time')
+                             data_prv,
+                             by = 'date_time')
 
 rm(time_series_2019, time_series_2022, measurements_time)
+
 
 #-------------------------------------------------------------------------------
 # Calculation of the pressure difference between Pu and Pc
 data_prv <- data_prv %>%
   mutate(dpc = pd-pc)
 
-# Insert column Year and filter for 2019 and 2022
-data_prv <- data_prv %>% 
-  mutate(year = year(date_time)) %>% 
-  mutate_at(vars(year), as.factor)
-
-
-# Holidays and Observances in Ecuador 
-#https://www.timeanddate.com/holidays/ecuador/
+#-------------------------------------------------------------------------------
+# Save data_prv in RDS format
 
 data_prv %>%
   saveRDS(file =  here::here("data", "data_prv.rds"))
