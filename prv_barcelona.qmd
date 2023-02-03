@@ -31,6 +31,7 @@ library(lubridate)
 library(latex2exp)
 library(hyd4gpv)
 library(scales)
+lybrary(hyd4gpv)
 
 my_comma <- scales::label_comma(accuracy = 1, big.mark = ".", decimal.mark = ",")
 ```
@@ -259,6 +260,8 @@ data_prv %>%
   - La posición media de la válvula en 2022 fue del `r round(median_vp$median_vp[2], 0)`%
   
 :::
+
+## Coeficiente de flujo $Kv$ de la válvula
 
 
 

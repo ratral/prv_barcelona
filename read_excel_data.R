@@ -108,7 +108,7 @@ time_series_2019 <- seq(from = as.POSIXct("2019-01-01 00:00:00", tz = "UTC"),
                         by = "15 min")
 
 time_series_2022 <- seq(from = as.POSIXct("2022-01-01 00:00:00", tz = "UTC"), 
-                        to   = as.POSIXct("2022-12-31 23:59:59", tz = "UTC"), 
+                        to   = as.POSIXct("2022-12-12 11:15:00", tz = "UTC"), 
                         by = "15 min")
 
 measurements_time <- as_tibble(c(time_series_2019, time_series_2022))
@@ -152,9 +152,26 @@ rm(time_series_2019, time_series_2022, measurements_time)
 
 
 #-------------------------------------------------------------------------------
+# Normalization of the Valve position and round up to the nearest 1%
+
+normalize2 <- function(x, na.rm = T) (x  / max(x, na.rm = T))
+roundUp <- function(x,to=10) to*(x%/%to + as.logical(x%%to))
+
+
+data_prv <- data_prv %>% 
+  mutate_at('vp', normalize2) %>% #scale to the max value
+  mutate(vp = vp*100)  %>% 
+  mutate(vp = roundUp(vp, to=1))
+
+
+#-------------------------------------------------------------------------------
 # Calculation of the pressure difference between Pu and Pc
 data_prv <- data_prv %>%
   mutate(dpc = pd-pc)
+
+#-------------------------------------------------------------------------------
+
+
 
 #-------------------------------------------------------------------------------
 # Save data_prv in RDS format
@@ -163,3 +180,4 @@ data_prv %>%
   saveRDS(file =  here::here("data", "data_prv.rds"))
 
 #-------------------------------------------------------------------------------
+
