@@ -7,6 +7,17 @@ library(bizdays)
 file_data_2019 <- here::here('data', 'base_data_2019.xlsx') 
 file_data_2022 <- here::here('data', 'base_data_2022.xlsx')
 
+params <- list(
+  diameter =900,
+  temperature = 20,
+  elevation = 0
+)
+
+# Functions for Normalization and round the Valve position and round up to the nearest 1%
+
+normalize2 <- function(x, na.rm = T) (x  / max(x, na.rm = T))
+roundUp <- function(x,to=10) to*(x%/%to + as.logical(x%%to))
+
 #-------------------------------------------------------------------------------
 # Data 2019
 
@@ -22,9 +33,13 @@ data_2019_flow <- read_excel(file_data_2019, sheet = "flow") %>%
 data_2019_position <- read_excel(file_data_2019, sheet = "vp") %>% 
   pivot_longer(!date_time, names_to = "measurement", values_to = "value")
 
+### Set negative values to NA
+data_2019_position$value[data_2019_position$value<0] <- NA
+
 ## Bind data frames
-data_2019 = rbind(data_2019_pressure,data_2019_flow,data_2019_position)
-rm(data_2019_pressure, data_2019_flow, data_2019_position)
+data_2019 <- rbind(data_2019_pressure,data_2019_flow,data_2019_position)
+rm(data_2019_pressure, data_2019_flow)
+
 
 # Round date_time to 15 minutes 
 data_2019$date_time <-  lubridate::round_date(data_2019$date_time, "15 minutes") 
@@ -68,7 +83,7 @@ data_2022_flow <- data_2022_flow %>%
 
 # Bind data frames 2022
 data_2022 <- rbind(data_2022_pu, data_2022_pd, data_2022_pc, data_2022_vp, data_2022_flow)
-rm(data_2022_pu, data_2022_pd, data_2022_pc, data_2022_vp, data_2022_flow)
+rm(data_2022_pu, data_2022_pd, data_2022_pc,data_2022_flow)
 
 # Round date_time to 15 minutes 
 data_2022$date_time <-lubridate::round_date(data_2022$date_time, "15 minutes") 
@@ -81,17 +96,51 @@ data_2022 <- data_2022 %>%
   as_tibble()
 
 #-------------------------------------------------------------------------------
-# combine data_2019 and data_2022
+# Combine data_2019 and data_2022
 data_prv <- rbind(data_2019, data_2022)
 rm(data_2019, data_2022)
 
+#===============================================================================
+# VALVE POSITION DATA
+#===============================================================================
+# Combine Data of Valve position !!!!!!
+data_valve_position <- rbind(data_2019_position, data_2022_vp) %>% 
+  select(date_time, value)
+
+rm(data_2019_position, data_2022_vp)
+
+## Extract unique elements (identical) from Valve position
+
+# data_valve_position <- data_valve_position %>% dplyr::distinct()
+data_valve_position$date_time <- round_date(data_valve_position$date_time, "second")
+
+data_valve_position <- data_valve_position %>%
+  dplyr::group_by(date_time)  %>%
+  dplyr::summarise(value = mean(value))%>% 
+  ungroup() %>% 
+  as_tibble()
+
+data_valve_position <- data_valve_position %>% 
+  mutate_at('value', normalize2) %>% #scale to the max value
+  mutate(value = value*100)  %>% 
+  mutate(value = roundUp(value, to=1))
+
+data_valve_position <- data_valve_position %>%
+  mutate(delta_time = as.numeric(date_time-lag(date_time)),
+         delta_pv = value-lag(value))
+
+data_valve_position$delta_time[data_valve_position$delta_time >= 86400] <- NA
+
+data_valve_position <- data_valve_position %>%
+  drop_na()
+#===============================================================================
+#=============================================================================== 
+  
 ## Extract unique elements (identical)
-data_prv <- data_prv %>% 
-  dplyr::distinct()
+data_prv <- data_prv %>% dplyr::distinct()
 
 # Filter out non-zero values
-data_prv <- data_prv %>% 
-  filter(value > 0)
+data_prv <- data_prv %>% filter(value > 0)
 
 ## select character columns 'measurement', to factor:
 data_prv <- mutate_at(data_prv, vars(measurement), as.factor)
@@ -154,10 +203,6 @@ rm(time_series_2019, time_series_2022, measurements_time)
 #-------------------------------------------------------------------------------
 # Normalization of the Valve position and round up to the nearest 1%
 
-normalize2 <- function(x, na.rm = T) (x  / max(x, na.rm = T))
-roundUp <- function(x,to=10) to*(x%/%to + as.logical(x%%to))
-
-
 data_prv <- data_prv %>% 
   mutate_at('vp', normalize2) %>% #scale to the max value
   mutate(vp = vp*100)  %>% 
@@ -170,7 +215,7 @@ data_prv <- data_prv %>%
   mutate(dpc = pd-pc)
 
 #-------------------------------------------------------------------------------
-
+# Calculation of the Kv
 
 
 #-------------------------------------------------------------------------------
@@ -178,6 +223,9 @@ data_prv <- data_prv %>%
 
 data_prv %>%
   saveRDS(file =  here::here("data", "data_prv.rds"))
+
+data_valve_position %>% 
+  saveRDS(file =  here::here("data", "data_valve_position.rds"))
 
 #-------------------------------------------------------------------------------
 

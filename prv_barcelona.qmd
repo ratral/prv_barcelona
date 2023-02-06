@@ -2,10 +2,6 @@
 title: "VRP BARCELONA 2019 y 2022"
 author: 
   - name: Dr. Raúl Trujillo
-params:
-  diameter: 900
-  temperature: 20
-  elevation: 0
 format: 
   html:
     theme: flatly
@@ -28,10 +24,10 @@ engine: knitr
 library(tidyverse)
 library(here)
 library(lubridate)
-library(latex2exp)
 library(hyd4gpv)
-library(scales)
-lybrary(hyd4gpv)
+library(gt)
+library(gtsummary)
+library(latex2exp)
 
 my_comma <- scales::label_comma(accuracy = 1, big.mark = ".", decimal.mark = ",")
 ```
@@ -52,6 +48,27 @@ data_prv <- readRDS(file =  here::here("data", "data_prv.rds"))
 
 ::: callout-note
 ## Lecturas de datos
+
+```{r}
+#| label: tab_summary_year
+#| echo: fenced
+#| output-location: column
+#| tab-cap: "Gráfico de caudales para 2019 y 2022"
+#| warning: false
+
+# Understanding box plot: 
+# https://jingwen-z.github.io/what-is-box-plot/
+
+data_prv %>% 
+  select(yr, pu, pd, vp, pc, flow) %>% 
+  tbl_summary(by = yr, missing = "no") %>%
+  add_n() %>%
+  as_gt() %>%
+  gt::tab_source_note(gt::md("*This data is simulated*"))
+```
+
+
+
 
 Datos:
 
@@ -80,22 +97,29 @@ Datos:
 #| warning: false
 
 # https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
-# https://r-graph-gallery.com/82-boxplot-on-top-of-histogram.html
+# https://bookdown.org/content/b298e479-b1ab-49fa-b83d-a57c2b034d49/distributions.html
 
 median_flow <- data_prv %>% 
   select(yr, flow) %>% 
   group_by(yr) %>% 
   summarise(median_flow =median(flow, na.rm=TRUE))
 
-  ggplot(data_prv, aes(x=flow, color=yr, fill = yr)) + 
-    geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
-    geom_density(alpha=0.6)+
-    geom_vline(data=median_flow, aes(xintercept=median_flow, color=yr),
-               linetype="dashed")+
+  data_prv %>% 
+    ggplot(aes(x=flow, fill = yr)) + 
+    geom_density(color="#e9ecef", 
+                 alpha=0.6, 
+                 position = 'identity') +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    geom_vline(data=median_flow, 
+               aes(xintercept=median_flow, color=yr),
+               colour = c("#69b3a2", "#404080"),
+               size = 1,
+               linetype="dashed") +
     theme(legend.position="top") +
     ggtitle("Histograma de caudales") +
     xlab("Caudal (L/s)") + 
-    ylab("Densidad") 
+    ylab("Dencidad") +
+    labs(fill="")
 
 ```
 
@@ -124,16 +148,21 @@ median_pu <- data_prv %>%
   summarise(median_pu =median(pu, na.rm=TRUE))
 
 data_prv %>% 
-ggplot(aes(x=pu, color=yr, fill = yr)) + 
-    geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
-    geom_density(alpha=0.6) +
-    geom_vline(data=median_pu, aes(xintercept=median_pu, color=yr),
+  ggplot(aes(x=pu, fill = yr)) + 
+  geom_density(color="#e9ecef", 
+               alpha=0.6, 
+               position = 'identity') +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  geom_vline(data=median_pu, 
+             aes(xintercept=median_pu, color=yr),
+             colour = c("#69b3a2", "#404080"),
+             size = 1,
              linetype="dashed") +
-    theme(legend.position="top") +
-    ggtitle("Histograma de presiones aguas arriba de la válvula") +
-    xlab("Presion aguas arriba de la válvula (bar)") + 
-    ylab("Densidad") 
-
+  theme(legend.position="top") +
+  ggtitle("Histograma de presiones aguas arriba de la válvula") +
+  xlab("Presion aguas arriba de la válvula (bar)") + 
+  ylab("Dencidad") +
+  labs(fill="")
 ```
 
 
@@ -160,16 +189,21 @@ median_pd <- data_prv %>%
   summarise(median_pd =median(pd, na.rm=TRUE))
 
 data_prv %>% 
-ggplot(aes(x=pd, color=yr, fill = yr)) + 
-    geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
-    geom_density(alpha=0.6) +
-    geom_vline(data=median_pd, aes(xintercept=median_pd, color=yr),
+  ggplot(aes(x=pd, fill = yr)) + 
+  geom_density(color="#e9ecef", 
+               alpha=0.6, 
+               position = 'identity') +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  geom_vline(data=median_pd, 
+             aes(xintercept=median_pd, color=yr),
+             colour = c("#69b3a2", "#404080"),
+             size = 1,
              linetype="dashed") +
-    theme(legend.position="top") +
-    ggtitle("Histograma de presiones aguas abajo de la válvula") +
-    xlab("Presion aguas abajo de la válvula (bar)") + 
-    ylab("Densidad") 
-
+  theme(legend.position="top") +
+  ggtitle("Histograma de presiones aguas abajo de la válvula") +
+  xlab("Presion aguas abajo de la válvula (bar)") + 
+  ylab("Dencidad") +
+  labs(fill="")
 ```
 
 
@@ -197,15 +231,20 @@ median_pc <- data_prv %>%
   summarise(median_pc =median(pc, na.rm=TRUE))
 
 data_prv %>% 
-ggplot(aes(x=pc)) + 
-    geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
-    geom_density(alpha=0.6) +
-    geom_vline(data=median_pc, aes(xintercept=median_pc),
-             linetype="dashed") +
+  ggplot(aes(x=pc)) + 
+  geom_density(color="#404080", 
+               fill = "#404080",
+               alpha = 0.6,
+               position = 'identity') +
+    geom_vline(data=median_pc, 
+               aes(xintercept=median_pc),
+               colour = c("#404080"),
+               size = 1,
+               linetype="dashed") +
     theme(legend.position="top") +
     ggtitle("Histograma de presiones en punto crítico") +
     xlab("Presion en punto crítico (bar)") + 
-    ylab("Densidad") 
+    ylab("Densidad")
 
 ```
 
@@ -226,6 +265,7 @@ ggplot(aes(x=pc)) +
 
 
 ## Posición de operación de la válvula
+
 ### Posición de operación de la válvula anos 2019 y 2022
 
 ```{r}
@@ -241,15 +281,34 @@ median_vp <- data_prv %>%
   summarise(median_vp = median(vp, na.rm=TRUE))
 
 data_prv %>% 
-  ggplot(aes(x=vp, color=yr, fill = yr)) + 
-     geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
-     geom_density(alpha=0.6) +
-     geom_vline(data=median_vp, aes(xintercept=median_vp, color=yr),
-                linetype="dashed") +
-      theme(legend.position="top") +
-      ggtitle("Histograma de presiones aguas arriba de la válvula") +
-      xlab("Presion aguas arriba de la válvula (bar)") + 
-      ylab("Densidad") 
+  ggplot(aes(x=vp, fill = yr)) + 
+  geom_density(color="#e9ecef", 
+               alpha=0.6, 
+               position = 'identity') +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  geom_vline(data=median_vp, 
+             aes(xintercept=median_vp, color=yr),
+             colour = c("#69b3a2", "#404080"),
+             size = 1,
+             linetype="dashed") +
+  theme(legend.position="top") +
+  ggtitle("Posición de operación de la válvula") +
+  xlab("Posición (%)") + 
+  ylab("Dencidad") +
+  labs(fill="")
+
+
+
+# data_prv %>% 
+#   ggplot(aes(x=vp, color=yr, fill = yr)) + 
+#      geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
+#      geom_density(alpha=0.6) +
+#      geom_vline(data=median_vp, aes(xintercept=median_vp, color=yr),
+#                 linetype="dashed") +
+#       theme(legend.position="top") +
+#       ggtitle("Histograma de presiones aguas arriba de la válvula") +
+#       xlab("Presion aguas arriba de la válvula (bar)") + 
+#       ylab("Densidad") 
 
 ```
 
