@@ -100,42 +100,6 @@ data_2022 <- data_2022 %>%
 data_prv <- rbind(data_2019, data_2022)
 rm(data_2019, data_2022)
 
-#===============================================================================
-# VALVE POSITION DATA
-#===============================================================================
-# Combine Data of Valve position !!!!!!
-data_valve_position <- rbind(data_2019_position, data_2022_vp) %>% 
-  select(date_time, value)
-
-rm(data_2019_position, data_2022_vp)
-
-## Extract unique elements (identical) from Valve position
-
-# data_valve_position <- data_valve_position %>% dplyr::distinct()
-data_valve_position$date_time <- round_date(data_valve_position$date_time, "second")
-
-data_valve_position <- data_valve_position %>%
-  dplyr::group_by(date_time)  %>%
-  dplyr::summarise(value = mean(value))%>% 
-  ungroup() %>% 
-  as_tibble()
-
-data_valve_position <- data_valve_position %>% 
-  mutate_at('value', normalize2) %>% #scale to the max value
-  mutate(value = value*100)  %>% 
-  mutate(value = roundUp(value, to=1))
-
-data_valve_position <- data_valve_position %>%
-  mutate(delta_time = as.numeric(date_time-lag(date_time)),
-         delta_pv = value-lag(value))
-
-data_valve_position$delta_time[data_valve_position$delta_time >= 86400] <- NA
-
-data_valve_position <- data_valve_position %>%
-  drop_na()
-#===============================================================================
-#=============================================================================== 
-  
 ## Extract unique elements (identical)
 data_prv <- data_prv %>% dplyr::distinct()
 
@@ -223,6 +187,44 @@ data_prv <- data_prv %>%
 
 data_prv %>%
   saveRDS(file =  here::here("data", "data_prv.rds"))
+
+
+#===============================================================================
+# VALVE POSITION DATA
+#===============================================================================
+# Combine Data of Valve position !!!!!!
+data_valve_position <- rbind(data_2019_position, data_2022_vp) %>% 
+  select(date_time, value)
+
+rm(data_2019_position, data_2022_vp)
+
+## Extract unique elements (identical) from Valve position
+
+# data_valve_position <- data_valve_position %>% dplyr::distinct()
+data_valve_position$date_time <- round_date(data_valve_position$date_time, "second")
+
+data_valve_position <- data_valve_position %>%
+  dplyr::group_by(date_time)  %>%
+  dplyr::summarise(value = mean(value))%>% 
+  ungroup() %>% 
+  as_tibble()
+
+data_valve_position <- data_valve_position %>% 
+  mutate_at('value', normalize2) %>% #scale to the max value
+  mutate(value = value*100)  %>% 
+  mutate(value = roundUp(value, to=1))
+
+data_valve_position <- data_valve_position %>%
+  mutate(delta_time = as.numeric(date_time-lag(date_time)),
+         delta_pv = value-lag(value))
+
+data_valve_position$delta_time[data_valve_position$delta_time >= 86400] <- NA
+
+data_valve_position <- data_valve_position %>%
+  drop_na() %>% 
+  filter(delta_time<=3600 & delta_pv<=20 & delta_pv>= -20) 
+#===============================================================================
+#=============================================================================== 
 
 data_valve_position %>% 
   saveRDS(file =  here::here("data", "data_valve_position.rds"))

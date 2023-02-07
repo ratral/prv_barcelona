@@ -32,7 +32,6 @@ library(latex2exp)
 my_comma <- scales::label_comma(accuracy = 1, big.mark = ".", decimal.mark = ",")
 ```
 
-
 # Lectura de los datos
 
 ```{r}
@@ -67,20 +66,16 @@ data_prv %>%
   gt::tab_source_note(gt::md("*This data is simulated*"))
 ```
 
-
-
-
 Datos:
 
-  - Se leyeron los datos suministrador para los anos 2019 y 2022
-  - Se cuentan con mediciones cada 15 minutos de:
-    - $P_u:$ Presiones en bares aguas arribe de la válvula.
-    - $P_d:$ Presiones en bares aguas abajo de la válvula.
-    - $P_c:$ Presiones en bares del punto crítico (solo del 2022)
-    - $flow:$ flujo a través de la válvula
-    - $vp:$ Posición de la válvula en %
-  - Se removieron las presiones en cero y/o negativas
- 
+-   Se leyeron los datos suministrador para los anos 2019 y 2022
+-   Se cuentan con mediciones cada 15 minutos de:
+    -   $P_u:$ Presiones en bares aguas arribe de la válvula.
+    -   $P_d:$ Presiones en bares aguas abajo de la válvula.
+    -   $P_c:$ Presiones en bares del punto crítico (solo del 2022)
+    -   $flow:$ flujo a través de la válvula
+    -   $vp:$ Posición de la válvula en %
+-   Se removieron las presiones en cero y/o negativas
 :::
 
 # Análisis inicial de los datos (visualización exploratoria)
@@ -124,15 +119,14 @@ median_flow <- data_prv %>%
 ```
 
 ::: callout-note
-## Flujos
+***Flujos***
 
-  - El flujo medio cada 15 minutos en 2019 fue de `r my_comma(median_flow$median_flow[1])` $l/s$
-  - El flujo medio cada 15 minutos en 2022 fue de `r my_comma(median_flow$median_flow[2])` $l/s$
-  
+-   El flujo medio cada 15 minutos en 2019 fue de `r my_comma(median_flow$median_flow[1])` $l/s$
+-   El flujo medio cada 15 minutos en 2022 fue de `r my_comma(median_flow$median_flow[2])` $l/s$
 :::
 
-
 ## Presiones
+
 ### Presiones aguas arriba en los anos 2019 y 2022
 
 ```{r}
@@ -165,13 +159,11 @@ data_prv %>%
   labs(fill="")
 ```
 
-
 ::: callout-note
-## Presiones aguas arriba de la válvula
+***Presiones aguas arriba de la válvula***
 
-  - La presión media aguas arriba en 2019 fue de `r median_pu$median_pu[1]` $bar$
-  - La presión media aguas arriba en 2022 fue de `r median_pu$median_pu[2]` $bar$
-  
+-   La presión media aguas arriba en 2019 fue de `r median_pu$median_pu[1]` $bar$
+-   La presión media aguas arriba en 2022 fue de `r median_pu$median_pu[2]` $bar$
 :::
 
 ### Presiones aguas abajo en los anos 2019 y 2022
@@ -206,15 +198,12 @@ data_prv %>%
   labs(fill="")
 ```
 
-
 ::: callout-note
-## Presiones aguas arriba de la válvula
+***Presiones aguas abajo de la válvula***
 
-  - La presión media aguas abajo en 2019 fue de `r median_pd$median_pd[1]` $bar$
-  - La presión media aguas abajo en 2022 fue de `r median_pd$median_pd[2]` $bar$
-  
+-   La presión media aguas abajo en 2019 fue de `r median_pd$median_pd[1]` $bar$
+-   La presión media aguas abajo en 2022 fue de `r median_pd$median_pd[2]` $bar$
 :::
-
 
 ### Presiones punto crítico en 2022
 
@@ -248,8 +237,6 @@ data_prv %>%
 
 ```
 
-
-
 ### Presiones diferenciales entre la presión aguas arriba y la presion en el punto crítico
 
 ```{r}
@@ -262,7 +249,6 @@ data_prv %>%
 
 
 ```
-
 
 ## Posición de operación de la válvula
 
@@ -296,31 +282,13 @@ data_prv %>%
   xlab("Posición (%)") + 
   ylab("Dencidad") +
   labs(fill="")
-
-
-
-# data_prv %>% 
-#   ggplot(aes(x=vp, color=yr, fill = yr)) + 
-#      geom_histogram(aes(y=..density..), position="identity", alpha=0.5) +
-#      geom_density(alpha=0.6) +
-#      geom_vline(data=median_vp, aes(xintercept=median_vp, color=yr),
-#                 linetype="dashed") +
-#       theme(legend.position="top") +
-#       ggtitle("Histograma de presiones aguas arriba de la válvula") +
-#       xlab("Presion aguas arriba de la válvula (bar)") + 
-#       ylab("Densidad") 
-
 ```
 
 ::: callout-note
-## Posición de operación de la válvula
+***Posición de operación de la válvula***
 
-  - La posición media de la válvula en 2019 fue del `r round(median_vp$median_vp[1], 0)`%
-  - La posición media de la válvula en 2022 fue del `r round(median_vp$median_vp[2], 0)`%
-  
+-   La posición media de la válvula en 2019 fue del `r round(median_vp$median_vp[1], 0)`%
+-   La posición media de la válvula en 2022 fue del `r round(median_vp$median_vp[2], 0)`%
 :::
 
 ## Coeficiente de flujo $Kv$ de la válvula
-
-
-
